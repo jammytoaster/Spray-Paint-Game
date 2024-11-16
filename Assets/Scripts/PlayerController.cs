@@ -24,18 +24,23 @@ public class PlayerController : MonoBehaviour
     public float crouchYScale;
     private float startYScale;
 
+    [Header ("Slope Handler")]
+    public float maxSlopeAngle;
+    private RaycastHit slopeHit;
+
+
     [Header("KeyBinds")]
     public KeyCode jumpKey = KeyCode.Space;
     public KeyCode sprintKey = KeyCode.LeftShift;
     public KeyCode crouchKey = KeyCode.LeftControl;
 
+
     [Header("Ground Check")]
-
-
     public Transform groundCheck;
     public float groundDistance = 0.4f;
     public LayerMask whatIsGround;
     bool grounded;
+
 
     Rigidbody rb;
 
@@ -66,7 +71,7 @@ public class PlayerController : MonoBehaviour
 
     void Update(){
 
-        // Raycast down to check ground
+        // Check ground using sphere at the bottom of character model
         grounded = Physics.CheckSphere(groundCheck.position, groundDistance, whatIsGround);
 
         MyInput();
@@ -96,11 +101,10 @@ public class PlayerController : MonoBehaviour
         if(Input.GetKey(jumpKey) && readyToJump && grounded){
             readyToJump = false;
             Jump();
-            Invoke(nameof(resetJump), jumpCooldown);
+            Invoke(nameof(ResetJump), jumpCooldown);
         }
 
         // Crouching
-
         if(Input.GetKeyDown(crouchKey)) {
             transform.localScale = new Vector3(transform.localScale.x, crouchYScale, transform.localScale.z);
             rb.AddForce(Vector3.down * 5f, ForceMode.Impulse);
@@ -141,9 +145,12 @@ public class PlayerController : MonoBehaviour
 
     private void MovePlayer(){
         // Calculate movement direction
-
         moveDirection = orientation.forward * yInput + orientation.right * xInput;
 
+        // When on a Slope
+        if(OnSlope()){
+            rb.AddForce(GetSlopeMoveDirection() * speed * 20f, ForceMode.Force);
+        }
 
         if(grounded){
             rb.AddForce(moveDirection.normalized * speed * 10f, ForceMode.Force);
@@ -172,8 +179,20 @@ public class PlayerController : MonoBehaviour
         rb.AddForce(transform.up * jumpForce, ForceMode.Impulse);
     }
 
-    private void resetJump(){
+    private void ResetJump(){
         readyToJump = true;
+    }
+
+    private bool OnSlope(){
+        if(Physics.Raycast(transform.position, Vector3.down, out slopeHit, groundDistance * 0.5f + 0.3f)){
+            float angle = Vector3.Angle(Vector3.up, slopeHit.normal);
+            return angle < maxSlopeAngle && angle != 0;
+        }
+        return false;
+    }
+
+    private Vector3 GetSlopeMoveDirection(){
+        return Vector3.ProjectOnPlane(moveDirection,slopeHit.normal).normalized;
     }
 
 }
