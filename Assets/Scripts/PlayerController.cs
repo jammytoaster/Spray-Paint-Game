@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Transactions;
 using UnityEditor;
+using UnityEditor.IMGUI.Controls;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
@@ -14,7 +15,6 @@ public class PlayerController : MonoBehaviour
     private float speed;
     public float walkSpeed;
     public float sprintSpeed;
-
     public Text speedText;
  
     public float groundDrag;
@@ -33,6 +33,8 @@ public class PlayerController : MonoBehaviour
     [Header ("Slope Handler")]
     public float maxSlopeAngle;
     private RaycastHit slopeHit;
+    public Vector3 slopeSlideSpeed;
+    private bool isSliding;
 
 
     [Header("KeyBinds")]
@@ -94,7 +96,6 @@ public class PlayerController : MonoBehaviour
         else{
             rb.linearDamping = 0;
         }
-
     }
 
     private void FixedUpdate(){
@@ -173,25 +174,32 @@ public class PlayerController : MonoBehaviour
     private void MovePlayer(){
         // Calculate movement direction
         moveDirection = orientation.forward * yInput + orientation.right * xInput;
+
         
-        // On slope
-        if (OnSlope())
-        {
-            Debug.Log("on Slope");
+        // Handle on slope movement
+        if (OnSlope() && readyToJump){
+            //Debug.Log("on Slope");
             rb.AddForce(GetSlopeMoveDirection() * speed * 20f, ForceMode.Force);
 
-            if (rb.linearVelocity.y > 0)
+
+            // Stops player sliding down a slope that is under the max slope angle
+            Vector3 slopeDown = -slopeHit.normal;
+            rb.AddForce(slopeDown * (rb.mass * Physics.gravity.magnitude * 0.8f), ForceMode.Acceleration);
+
+            // Keeps player on the ground when going up slope
+            if (rb.linearVelocity.y > 0){
                 rb.AddForce(Vector3.down * 80f, ForceMode.Force);
+            }
         }
 
         // on ground
-        else if(grounded){
-            Debug.Log("GROUND");
+        else if (grounded){
+            //Debug.Log("GROUND");
             rb.AddForce(moveDirection.normalized * speed * 10f, ForceMode.Force);
         }
 
         // in air
-        else if(!grounded){
+        else if (!grounded){
             rb.AddForce(moveDirection.normalized * speed * 10f * airMultiplier, ForceMode.Force);
         }
 
@@ -203,8 +211,7 @@ public class PlayerController : MonoBehaviour
     private void SpeedControl(){
 
         // limiting speed on slope
-        if (OnSlope())
-        {
+        if (OnSlope() && readyToJump){
             if (rb.linearVelocity.magnitude > speed)
                 rb.linearVelocity = rb.linearVelocity.normalized * speed;
         }
@@ -215,7 +222,7 @@ public class PlayerController : MonoBehaviour
             Vector3 flatVelocity = new Vector3(rb.linearVelocity.x, 0f, rb.linearVelocity.z);
 
             // If you go faster than movement speed, find what velocity then apply
-            if(flatVelocity.magnitude > speed){
+            if (flatVelocity.magnitude > speed){
                 Vector3 limitedVelocity = flatVelocity.normalized * speed;
                 rb.linearVelocity = new Vector3(limitedVelocity.x, rb.linearVelocity.y, limitedVelocity.z);
             }
@@ -235,10 +242,17 @@ public class PlayerController : MonoBehaviour
 
     private bool OnSlope(){
         
-        if(Physics.Raycast(transform.position, Vector3.down, out slopeHit, playerHeight * 0.5f + 0.3f))
+        if (Physics.Raycast(transform.position, Vector3.down, out slopeHit, playerHeight * 0.5f + 0.3f))
         {
             float angle = Vector3.Angle(Vector3.up, slopeHit.normal);
-            Debug.Log($"Slope detected: {angle}");
+
+            if (angle > maxSlopeAngle) {
+                xInput = 0f;
+                yInput = 0f;
+            }
+            
+
+            //Debug.Log($"Slope detected: {angle}");
             return angle < maxSlopeAngle && angle != 0;
         }
 
