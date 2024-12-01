@@ -111,9 +111,12 @@ public class PlayerController : MonoBehaviour
         // When to jump
         // GetKey used so player can hold down space
         if(Input.GetKey(jumpKey) && readyToJump && grounded){
-            readyToJump = false;
-            Jump();
-            Invoke(nameof(ResetJump), jumpCooldown);
+            bool canJump = !OnSlope() || OnSlope() && Vector3.Angle(Vector3.up, slopeHit.normal) <= maxSlopeAngle;
+            if(canJump){
+                readyToJump = false;
+                Jump();
+                Invoke(nameof(ResetJump), jumpCooldown);
+            }
         }
 
         // Crouching
