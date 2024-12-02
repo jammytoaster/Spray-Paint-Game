@@ -31,7 +31,7 @@ public class Throw : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        if(Input.GetKey(throwKey) && Input.GetKey(aimKey) && readyToThrow && totalThrows > 0){
+        if(Input.GetKeyDown(throwKey) && Input.GetKey(aimKey) && readyToThrow && totalThrows > 0){
             Throwing();
             Debug.Log("thow");
         }

@@ -3,7 +3,6 @@ using UnityEngine;
 [RequireComponent(typeof(MeshFilter))]
 public class SprayWallMeshGenerator : MonoBehaviour
 {
-    [SerializeField] Material mat;
     private Mesh mesh;
 
     private GameObject meshObject;
@@ -16,10 +15,7 @@ public class SprayWallMeshGenerator : MonoBehaviour
     void Start()
     {
         mesh = new Mesh();
-        meshObject = new GameObject("Mesh Object", typeof(MeshRenderer), typeof(MeshFilter));
-
-        meshObject.GetComponent<MeshFilter>().mesh = mesh;
-        meshObject.GetComponent<MeshRenderer>().material = mat;
+        GetComponent<MeshFilter>().mesh = mesh;
 
         CreateShape();
         UpdateMesh();
@@ -55,4 +51,5 @@ public class SprayWallMeshGenerator : MonoBehaviour
 
         mesh.RecalculateNormals();
     }
+
 }
